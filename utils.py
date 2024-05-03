@@ -124,6 +124,9 @@ class Venmo:
         # Returns a boolean: true if successfully requested
         return self.client.payment.request_money(amount, description, id)
 
+    def get_all_requests(self):
+        return self.client.payment.get_charge_payments()
+
 
 class Telegram:
     def __init__(self, bot_token, chat_id):
