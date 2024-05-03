@@ -1,10 +1,15 @@
 import os
-from venmo_api import Client, PaymentPrivacy
+from venmo_api import Client
 from notifiers import get_notifier
 import gspread
 import json
 import base64
 from dataclasses import dataclass
+from email.mime.text import MIMEText
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from google.oauth2.credentials import Credentials
+from requests import HTTPError
 
 
 @dataclass
@@ -33,6 +38,30 @@ def get_env(env):
 
 
 env_vars = ["VENMO_ACCESS_TOKEN", "SERVICE_ACCOUNT_CREDENTIALS", "SPREADSHEET_KEY"]
+
+
+def create_summary(successfulRequests, unsuccessfulRequests):
+    return """Failed to send Venmo requests to:
+
+{failedRequests}
+
+Successfully sent Venmo requests to:
+
+{successfulRequests}
+    """.format(
+        failedRequests="\n".join(
+            [
+                f"- {friend.name} - @{friend.username} (status: {friend.status})"
+                for friend in unsuccessfulRequests
+            ]
+        ),
+        successfulRequests="\n".join(
+            [
+                f"- {friend.name} - @{friend.username} (status: {friend.status})"
+                for friend in successfulRequests
+            ]
+        ),
+    )
 
 
 def verify_env_vars(vars, numOfExpected):
@@ -130,3 +159,80 @@ class GoogleDrive:
     def decode_service_credentials(cls, base64_encoded_credentials):
         encoded_key = str(base64_encoded_credentials)[2:-1]
         return json.loads(base64.b64decode(encoded_key).decode("utf-8"))
+
+    @classmethod
+    def encode_service_credentials(cls, json_credentials):
+        import json
+        import base64
+
+        # convert json to a string
+        service_key = json.dumps(json_credentials)
+
+        # encode service key
+        encoded_service_key = base64.b64encode(service_key.encode("utf-8"))
+        return encoded_service_key
+
+
+class Email:
+    def __init__(self):
+        EMAIL_USERNAME = get_env("EMAIL_USERNAME")
+        EMAIL_PASSWORD = get_env("EMAIL_PASSWORD")
+        RECIPIENT_EMAIL = get_env("RECIPIENT_EMAIL")
+        EMAIL_OAUTH_CREDENTIALS = get_env("EMAIL_OAUTH_CREDENTIALS")
+        EMAIL_OAUTH_TOKEN = get_env("EMAIL_OAUTH_TOKEN")
+        self.email_username = EMAIL_USERNAME
+        self.email_password = EMAIL_PASSWORD
+        self.recipient_email = RECIPIENT_EMAIL
+        self.email_oauth_credentials = Email.decode_oauth_credentials(
+            EMAIL_OAUTH_CREDENTIALS
+        )
+        self.email_oauth_token = Email.decode_oauth_credentials(EMAIL_OAUTH_TOKEN)
+        self.SCOPES = ["https://www.googleapis.com/auth/gmail.send"]
+
+    def get_encoded_email_token(self):
+        flow = InstalledAppFlow.from_client_config(
+            client_config=self.email_oauth_credentials, scopes=self.SCOPES
+        )
+        creds = flow.run_local_server(port=0)
+        return Email.encode_oauth_credentials(creds)
+
+    def send_email(self, subject, text):
+        RECIPIENT_EMAIL = get_env("RECIPIENT_EMAIL")
+        creds = Credentials.from_authorized_user_info(
+            self.email_oauth_token, self.SCOPES
+        )
+
+        service = build("gmail", "v1", credentials=creds)
+        message = MIMEText(text)
+        message["to"] = RECIPIENT_EMAIL
+        message["subject"] = subject
+        create_message = {"raw": base64.urlsafe_b64encode(message.as_bytes()).decode()}
+
+        try:
+            message = (
+                service.users()
+                .messages()
+                .send(userId="me", body=create_message)
+                .execute()
+            )
+            print(f'sent message to {message} Message Id: {message["id"]}')
+        except HTTPError as error:
+            print(f"An error occurred: {error}")
+            message = None
+
+    @classmethod
+    def decode_oauth_credentials(cls, base64_encoded_credentials):
+        encoded_key = str(base64_encoded_credentials)[2:-1]
+        return json.loads(base64.b64decode(encoded_key).decode("utf-8"))
+
+    @classmethod
+    def encode_oauth_credentials(cls, json_credentials):
+        import json
+        import base64
+
+        # convert json to a string
+        service_key = json.dumps(json_credentials)
+
+        # encode service key
+        encoded_service_key = base64.b64encode(service_key.encode("utf-8"))
+        return encoded_service_key

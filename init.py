@@ -3,7 +3,15 @@ from dotenv import load_dotenv
 from notifiers import get_notifier
 from datetime import datetime
 
-from utils import get_env, env_vars, get_month, Venmo, Telegram, GoogleDrive
+from utils import (
+    create_summary,
+    get_env,
+    env_vars,
+    get_month,
+    Venmo,
+    Email,
+    GoogleDrive,
+)
 
 
 def main(now):
@@ -23,29 +31,32 @@ def main(now):
     google = GoogleDrive(
         GoogleDrive.decode_service_credentials(service_account_credentials)
     )
+    email = Email()
 
     friends = google.get_all_records_from_spreadsheet(spreadsheet_key)
 
     successfulRequests = []
+    unsuccessfulRequests = []
     expectedRequests = len(friends)
 
     for friend in friends:
         if friend.status != "ACTIVE" or friend.id is None:
+            unsuccessfulRequests.append(friend)
             continue
-        name = friend.name
-        username = friend.username
         id = friend.id
         description = "Tribe tuition for the month of " + month + "— Sent by 👹"
         amount = friend.tuition
-        message = f"""Good news old sport!
 
-I have successfully requested money from {name} - {username}.
-
-— Efron 🤵🏻‍♂️
-    """
         success = venmo.request_money(id, amount, description)
         if success:
-            successfulRequests.append(success)
+            successfulRequests.append(friend)
+        else:
+            unsuccessfulRequests.append(friend)
+
+    email.send_email(
+        "{} Venmo summary for Tribe tuition".format(month),
+        create_summary(successfulRequests, unsuccessfulRequests),
+    )
 
     if len(successfulRequests) == expectedRequests:
         print(
