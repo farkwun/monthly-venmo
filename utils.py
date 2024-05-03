@@ -13,6 +13,7 @@ class RequestUser:
     id: str
     tuition: float
     status: str
+    name: str
 
 
 def get_env(env):

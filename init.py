@@ -32,13 +32,14 @@ def main(now):
     for friend in friends:
         if friend.status != "ACTIVE" or friend.id is None:
             continue
-        name = friend.username
+        name = friend.name
+        username = friend.username
         id = friend.id
         description = "Tribe tuition for the month of " + month + "— Sent by 👹"
         amount = friend.tuition
         message = f"""Good news old sport!
 
-I have successfully requested money from {name}.
+I have successfully requested money from {name} - {username}.
 
 — Efron 🤵🏻‍♂️
     """

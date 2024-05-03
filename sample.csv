@@ -1,3 +1,3 @@
-username,status,tuition
-testuser1,ACTIVE,0.01
-testuser2,ACTIVE,0.01
+username,status,tuition,name
+testuser1,ACTIVE,0.01,firstnamelastname
+testuser2,ACTIVE,0.01,firstnamelastname
