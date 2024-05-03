@@ -90,11 +90,9 @@ class Venmo:
             print("ERROR: user did not comeback. Check username.")
             return None
 
-    def request_money(self, id, amount, description, callback=None):
+    def request_money(self, id, amount, description):
         # Returns a boolean: true if successfully requested
-        return self.client.payment.request_money(
-            amount, description, id, PaymentPrivacy.PRIVATE, None, callback
-        )
+        return self.client.payment.request_money(amount, description, id)
 
 
 class Telegram:

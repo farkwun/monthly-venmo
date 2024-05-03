@@ -42,7 +42,7 @@ I have successfully requested money from {name}.
 
 — Efron 🤵🏻‍♂️
     """
-        success = venmo.request_money(id, amount, description, lambda x: message)
+        success = venmo.request_money(id, amount, description)
         if success:
             successfulRequests.append(success)
 
