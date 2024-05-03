@@ -178,13 +178,9 @@ class GoogleDrive:
 
 class Email:
     def __init__(self):
-        EMAIL_USERNAME = get_env("EMAIL_USERNAME")
-        EMAIL_PASSWORD = get_env("EMAIL_PASSWORD")
         RECIPIENT_EMAIL = get_env("RECIPIENT_EMAIL")
         EMAIL_OAUTH_CREDENTIALS = get_env("EMAIL_OAUTH_CREDENTIALS")
         EMAIL_OAUTH_TOKEN = get_env("EMAIL_OAUTH_TOKEN")
-        self.email_username = EMAIL_USERNAME
-        self.email_password = EMAIL_PASSWORD
         self.recipient_email = RECIPIENT_EMAIL
         self.email_oauth_credentials = Email.decode_oauth_credentials(
             EMAIL_OAUTH_CREDENTIALS
