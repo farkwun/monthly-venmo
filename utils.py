@@ -1,6 +1,7 @@
 import os
 from venmo_api import Client
 from notifiers import get_notifier
+from google.auth.transport.requests import Request
 import gspread
 import json
 import base64
@@ -35,6 +36,32 @@ def get_env(env):
         print(f"❌ Can't find {env} in environment.")
         print("   Exiting script. Please add and run again.")
         quit()
+
+
+def load_env_variables_from_spreadsheet():
+    SERVICE_ACCOUNT_CREDENTIALS = get_env("SERVICE_ACCOUNT_CREDENTIALS")
+    CREDENTIALS_SPREADSHEET_KEY = get_env("CREDENTIALS_SPREADSHEET_KEY")
+    google = GoogleDrive(
+        GoogleDrive.decode_service_credentials(SERVICE_ACCOUNT_CREDENTIALS)
+    )
+    sheet = google.client.open_by_key(CREDENTIALS_SPREADSHEET_KEY)
+    worksheet = sheet.get_worksheet(0)
+    records = worksheet.get_all_records()
+    for record in records:
+        os.environ[record["API"]] = record["token"]
+
+
+def change_spreadsheet_env_variable(variable_name, variable_value):
+    SERVICE_ACCOUNT_CREDENTIALS = get_env("SERVICE_ACCOUNT_CREDENTIALS")
+    CREDENTIALS_SPREADSHEET_KEY = get_env("CREDENTIALS_SPREADSHEET_KEY")
+    google = GoogleDrive(
+        GoogleDrive.decode_service_credentials(SERVICE_ACCOUNT_CREDENTIALS)
+    )
+    values = google.get_all_values_from_spreadsheet(CREDENTIALS_SPREADSHEET_KEY)
+    for value in values:
+        if value[0] == variable_name:
+            value[1] = variable_value
+    google.overwrite_values(CREDENTIALS_SPREADSHEET_KEY, values)
 
 
 env_vars = ["VENMO_ACCESS_TOKEN", "SERVICE_ACCOUNT_CREDENTIALS", "SPREADSHEET_KEY"]
@@ -142,6 +169,17 @@ class GoogleDrive:
     def __init__(self, service_credentials):
         self.client = gspread.service_account_from_dict(service_credentials)
 
+    def get_all_values_from_spreadsheet(self, spreadsheet_key, worksheet_index=0):
+        sheet = self.client.open_by_key(spreadsheet_key)
+        worksheet = sheet.get_worksheet(worksheet_index)
+        values = worksheet.get_all_values()
+        return values
+
+    def overwrite_values(self, spreadsheet_key, values, worksheet_index=0):
+        sheet = self.client.open_by_key(spreadsheet_key)
+        worksheet = sheet.get_worksheet(worksheet_index)
+        worksheet.update(values)
+
     def get_all_records_from_spreadsheet(self, spreadsheet_key, worksheet_index=0):
         VENMO_ACCESS_TOKEN = get_env("VENMO_ACCESS_TOKEN")
         venmo = Venmo(VENMO_ACCESS_TOKEN)
@@ -178,15 +216,36 @@ class GoogleDrive:
 
 class Email:
     def __init__(self):
+        self.SCOPES = ["https://www.googleapis.com/auth/gmail.send"]
+
+        load_env_variables_from_spreadsheet()
+
         RECIPIENT_EMAIL = get_env("RECIPIENT_EMAIL")
         EMAIL_OAUTH_CREDENTIALS = get_env("EMAIL_OAUTH_CREDENTIALS")
         EMAIL_OAUTH_TOKEN = get_env("EMAIL_OAUTH_TOKEN")
-        self.recipient_email = RECIPIENT_EMAIL
+
         self.email_oauth_credentials = Email.decode_oauth_credentials(
             EMAIL_OAUTH_CREDENTIALS
         )
         self.email_oauth_token = Email.decode_oauth_credentials(EMAIL_OAUTH_TOKEN)
-        self.SCOPES = ["https://www.googleapis.com/auth/gmail.send"]
+
+        creds = Credentials.from_authorized_user_info(
+            self.email_oauth_token, self.SCOPES
+        )
+        if not creds or not creds.valid:
+            print("creds_were_invalid")
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                flow = InstalledAppFlow.from_client_config(
+                    client_config=self.email_oauth_credentials, scopes=self.SCOPES
+                )
+                creds = flow.run_local_server(port=0)
+            change_spreadsheet_env_variable(
+                "EMAIL_OAUTH_TOKEN",
+                Email.encode_oauth_credentials(json.loads(creds.to_json())),
+            )
+        self.recipient_email = RECIPIENT_EMAIL
 
     def get_encoded_email_token(self):
         flow = InstalledAppFlow.from_client_config(
@@ -234,4 +293,4 @@ class Email:
 
         # encode service key
         encoded_service_key = base64.b64encode(service_key.encode("utf-8"))
-        return encoded_service_key
+        return str(encoded_service_key)
