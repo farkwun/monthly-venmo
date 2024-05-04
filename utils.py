@@ -1,5 +1,5 @@
 import os
-from venmo_api import Client
+from venmo_api import Client, PaymentStatus
 from notifiers import get_notifier
 from google.auth.transport.requests import Request
 import gspread
@@ -151,8 +151,12 @@ class Venmo:
         # Returns a boolean: true if successfully requested
         return self.client.payment.request_money(amount, description, id)
 
-    def get_all_requests(self):
-        return self.client.payment.get_charge_payments()
+    def get_all_requests(self, status=PaymentStatus.PENDING):
+        return [
+            payment
+            for payment in self.client.payment.get_charge_payments()
+            if payment.status == status
+        ]
 
 
 class Telegram:
