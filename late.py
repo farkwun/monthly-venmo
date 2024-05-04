@@ -57,7 +57,7 @@ def main(now):
             fail_payments.append(payment)
 
     email.send_email(
-        "{} Venmo summary for LATE Tribe tuition".format(month),
+        "[TUITION] LATE {} Venmo summary".format(month),
         create_summary(success_payments, fail_payments),
     )
 

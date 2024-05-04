@@ -54,7 +54,7 @@ def main(now):
             unsuccessfulRequests.append(friend)
 
     email.send_email(
-        "{} Venmo summary for Tribe tuition".format(month),
+        "[TUITION] {} Venmo summary".format(month),
         create_summary(successfulRequests, unsuccessfulRequests),
     )
 
