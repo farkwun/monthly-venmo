@@ -135,7 +135,7 @@ def get_month(now):
     return month
 
 
-def get_month(now):
+def get_year(now):
     """
     Returns the current month.
     Example: April
