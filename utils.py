@@ -135,6 +135,16 @@ def get_month(now):
     return month
 
 
+def get_month(now):
+    """
+    Returns the current month.
+    Example: April
+    """
+
+    year = now.strftime("%Y")
+    return year
+
+
 class Venmo:
     def __init__(self, access_token):
         self.client = Client(access_token=access_token)

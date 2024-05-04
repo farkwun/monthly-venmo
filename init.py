@@ -8,6 +8,7 @@ from utils import (
     get_env,
     env_vars,
     get_month,
+    get_year,
     Venmo,
     Email,
     GoogleDrive,
@@ -27,6 +28,7 @@ def main(now):
     (access_token, service_account_credentials, spreadsheet_key) = actualVars
 
     month = get_month(now)
+    year = get_year(now)
     venmo = Venmo(access_token)
     google = GoogleDrive(
         GoogleDrive.decode_service_credentials(service_account_credentials)
@@ -54,7 +56,7 @@ def main(now):
             unsuccessfulRequests.append(friend)
 
     email.send_email(
-        "[TUITION] {} Venmo summary".format(month),
+        "[TUITION] {} {} Venmo summary".format(month, year),
         create_summary(successfulRequests, unsuccessfulRequests),
     )
 

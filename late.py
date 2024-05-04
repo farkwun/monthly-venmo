@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from utils import (
     get_env,
     get_month,
+    get_year,
     create_summary,
     Venmo,
     Email,
@@ -24,6 +25,7 @@ def main(now):
     load_dotenv()
 
     month = get_month(now)
+    year = get_year(now)
 
     ACCESS_TOKEN = get_env("VENMO_ACCESS_TOKEN")
     venmo = Venmo(ACCESS_TOKEN)
@@ -57,7 +59,7 @@ def main(now):
             fail_payments.append(payment)
 
     email.send_email(
-        "[TUITION] LATE {} Venmo summary".format(month),
+        "[TUITION] LATE {} {} Venmo summary".format(month, year),
         create_summary(success_payments, fail_payments),
     )
 
