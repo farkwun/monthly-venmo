@@ -78,13 +78,13 @@ Successfully sent Venmo requests to:
     """.format(
         failedRequests="\n".join(
             [
-                f"- {friend.name} - @{friend.username} (status: {friend.status})"
+                f"- {friend.name} - @{friend.username} (status: {friend.status}, id: {friend.id})"
                 for friend in unsuccessfulRequests
             ]
         ),
         successfulRequests="\n".join(
             [
-                f"- {friend.name} - @{friend.username} (status: {friend.status})"
+                f"- {friend.name} - @{friend.username} (status: {friend.status}, id: {friend.id})"
                 for friend in successfulRequests
             ]
         ),
