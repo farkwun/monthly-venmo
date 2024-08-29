@@ -20,6 +20,7 @@ class RequestUser:
     tuition: float
     status: str
     name: str
+    notes: str
 
 
 def get_env(env):
@@ -205,7 +206,12 @@ class GoogleDrive:
 
         return [
             RequestUser(
-                **record, **{"id": venmo.get_user_id_by_username(record["username"])}
+                **record,
+                **{
+                    "id": venmo.get_user_id_by_username(record["username"])
+                    if record["username"]
+                    else None
+                },
             )
             for record in records
         ]
